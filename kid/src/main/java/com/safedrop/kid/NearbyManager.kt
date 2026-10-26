@@ -1,4 +1,4 @@
-package com.safedrop.app
+package com.safedrop.kid
 
 import android.content.ContentValues
 import android.content.Context
@@ -27,6 +27,7 @@ import com.google.android.gms.nearby.connection.PayloadTransferUpdate
 import com.google.android.gms.nearby.connection.Strategy
 import java.io.File
 import java.util.UUID
+import com.safedrop.core.FilePolicy
 
 data class AuthPrompt(val endpointId: String, val name: String, val digits: String)
 
@@ -54,7 +55,7 @@ class NearbyManager(context: Context) {
     private val owner = mutableMapOf<Long, String>()                 // payloadId -> endpointId
     private val outgoing = mutableMapOf<Long, Pending>()             // file payloadId -> pending item
 
-    private val pol get() = Store.policy.value
+    private val pol get() = KidState.control.file
 
     // ---------------------------------------------------------------- discovery
     fun start() {
@@ -214,9 +215,6 @@ class NearbyManager(context: Context) {
         val fileReason: String? = ParentRules.checkFile(name, size, pol)
         if (fileReason != null) {
             Store.addLog("Blocked sending \"$name\" to $peer: $fileReason"); status = "Not sent: $fileReason"; return
-        }
-        if (ParentRules.inQuietHours(pol)) {
-            Store.addLog("Blocked sending \"$name\": quiet hours"); status = "Not sent: quiet hours"; return
         }
         Thread {
             val dir = File(ctx.filesDir, "outbox").apply { mkdirs() }

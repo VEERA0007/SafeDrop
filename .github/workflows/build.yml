@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APKs
 on:
   push:
   workflow_dispatch:
@@ -17,14 +17,18 @@ jobs:
       - name: Build
         run: |
           set -o pipefail
-          echo "ANDROID_HOME=$ANDROID_HOME"
           gradle assembleDebug --no-daemon --console=plain 2>&1 | tee build.log
       - name: Report errors
         if: failure()
         run: |
-          grep -E "^e: |error:|What went wrong|SDK location|not found|Could not" -A2 build.log | head -40 | while IFS= read -r l; do echo "::error::$l"; done
+          grep -E "^e: |error:|What went wrong|SDK location|not found|Could not" -A2 build.log | head -60 | while IFS= read -r l; do echo "::error::$l"; done
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: SafeDrop-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: SafeDrop-Kids-apk
+          path: kid/build/outputs/apk/debug/*.apk
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: SafeDrop-Parent-apk
+          path: parent/build/outputs/apk/debug/*.apk

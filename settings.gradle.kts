@@ -6,4 +6,4 @@ dependencyResolutionManagement {
     repositories { google(); mavenCentral() }
 }
 rootProject.name = "SafeDrop"
-include(":app")
+include(":core", ":kid", ":parent")
