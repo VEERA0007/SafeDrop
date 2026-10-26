@@ -229,7 +229,7 @@ fun ParentScreen(nearby: NearbyManager) {
         item { Text("Activity log", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 12.dp)) }
         item { TextButton({ Store.clearLog() }) { Text("Clear log") } }
         if (Store.log.isEmpty()) item { Text("No activity yet.") }
-        items(Store.log.toList()) { e ->
+        items(Store.log.toList()) { e: ActivityEntry ->
             Text("${Store.fmt(e.time)}  ${e.text}", style = MaterialTheme.typography.bodySmall)
         }
     }

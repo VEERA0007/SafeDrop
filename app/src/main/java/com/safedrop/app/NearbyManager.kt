@@ -81,8 +81,9 @@ class NearbyManager(context: Context) {
 
     fun connect(endpointId: String) {
         val name = discovered[endpointId] ?: return
-        Rules.checkPeer(name, pol)?.let {
-            Store.addLog("Blocked connecting to $name: $it"); status = "Blocked: $it"; return
+        val blockReason: String? = ParentRules.checkPeer(name, pol)
+        if (blockReason != null) {
+            Store.addLog("Blocked connecting to $name: $blockReason"); status = "Blocked: $blockReason"; return
         }
         client.requestConnection(myName, endpointId, lifecycle)
             .addOnFailureListener { status = "Connect failed: ${it.message}" }
@@ -92,7 +93,7 @@ class NearbyManager(context: Context) {
     private val lifecycle = object : ConnectionLifecycleCallback() {
         override fun onConnectionInitiated(id: String, info: ConnectionInfo) {
             names[id] = info.endpointName
-            val reason = Rules.checkPeer(info.endpointName, pol)
+            val reason = ParentRules.checkPeer(info.endpointName, pol)
             if (reason != null) {
                 client.rejectConnection(id)
                 Store.addLog("Refused connection from ${info.endpointName}: $reason")
@@ -135,9 +136,10 @@ class NearbyManager(context: Context) {
                     val name = sanitize(parts[2])
                     meta[fid] = name to size
                     val peer = names[endpointId] ?: endpointId
-                    Rules.checkFile(name, size, pol)?.let {
+                    val bad: String? = ParentRules.checkFile(name, size, pol)
+                    if (bad != null) {
                         refused.add(fid); client.cancelPayload(fid)
-                        Store.addLog("Rejected incoming \"$name\" from $peer: $it")
+                        Store.addLog("Rejected incoming \"$name\" from $peer: $bad")
                     }
                 }
                 Payload.Type.FILE -> {
@@ -159,7 +161,7 @@ class NearbyManager(context: Context) {
             val payload = incoming.remove(id) ?: return
             val (name, size) = meta.remove(id) ?: ("file_$id" to u.totalBytes)
             val peer = names[endpointId] ?: endpointId
-            val reason = Rules.checkFile(name, size, pol)
+            val reason = ParentRules.checkFile(name, size, pol)
             Thread {
                 val dir = File(ctx.filesDir, "quarantine").apply { mkdirs() }
                 val dest = File(dir, "${id}_$name")
@@ -209,10 +211,11 @@ class NearbyManager(context: Context) {
                 c.getColumnIndex(OpenableColumns.SIZE).takeIf { it >= 0 }?.let { size = c.getLong(it) }
             }
         }
-        Rules.checkFile(name, size, pol)?.let {
-            Store.addLog("Blocked sending \"$name\" to $peer: $it"); status = "Not sent: $it"; return
+        val fileReason: String? = ParentRules.checkFile(name, size, pol)
+        if (fileReason != null) {
+            Store.addLog("Blocked sending \"$name\" to $peer: $fileReason"); status = "Not sent: $fileReason"; return
         }
-        if (Rules.inQuietHours(pol)) {
+        if (ParentRules.inQuietHours(pol)) {
             Store.addLog("Blocked sending \"$name\": quiet hours"); status = "Not sent: quiet hours"; return
         }
         Thread {

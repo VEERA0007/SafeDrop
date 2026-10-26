@@ -87,9 +87,9 @@ data class Pending(
     }
 }
 
-data class LogEntry(val time: Long, val text: String)
+data class ActivityEntry(val time: Long, val text: String)
 
-object Rules {
+object ParentRules {
     fun inQuietHours(p: Policy): Boolean {
         if (!p.enabled || !p.quietEnabled) return false
         val h = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
@@ -119,7 +119,7 @@ object Store {
     private lateinit var sp: SharedPreferences
     val policy = mutableStateOf(Policy())
     val pending = mutableStateListOf<Pending>()
-    val log = mutableStateListOf<LogEntry>()
+    val log = mutableStateListOf<ActivityEntry>()
 
     fun init(ctx: Context) {
         if (::sp.isInitialized) return
@@ -133,7 +133,7 @@ object Store {
             val a = JSONArray(sp.getString("log", "[]"))
             for (i in 0 until a.length()) {
                 val o = a.getJSONObject(i)
-                log.add(LogEntry(o.getLong("t"), o.getString("m")))
+                log.add(ActivityEntry(o.getLong("t"), o.getString("m")))
             }
         }
     }
@@ -151,7 +151,7 @@ object Store {
     }
 
     fun addLog(text: String) {
-        log.add(0, LogEntry(System.currentTimeMillis(), text))
+        log.add(0, ActivityEntry(System.currentTimeMillis(), text))
         while (log.size > 200) log.removeAt(log.size - 1)
         saveLog()
     }
